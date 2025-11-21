@@ -5,12 +5,9 @@ import { PostList } from "./components/PostList";
 import { PostEditor } from "./components/PostEditor";
 import { ProfileEditor } from "./components/ProfileEditor";
 import { MyInfo } from "./components/MyInfo";
-import { PlaylistManager } from "./components/PlaylistManager";
 import { pastelThemes, BORDER_COLOR } from "./themeColors";
-import { useKakaoLoader } from "react-kakao-maps-sdk";
-import { Map } from "react-kakao-maps-sdk";
 
-const categories = ["일상", "맛집", "나의 플레이리스트", "나의 정보", "기타"];
+const categories = ["일상", "맛집", "나의 정보", "기타"];
 
 export default function App() {
   const [currentCategory, setCurrentCategory] = useState("일상");
@@ -19,17 +16,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [loading, error] = useKakaoLoader({
-    appkey: "ebb672f8668ef515c9e7a4cd8141af67",
-    libraries: ["services"],
-  });
-
-  if (loading) {
-    console.log("로딩중");
-  }
-  if (error) {
-    console.log(String(error.message || error));
-  }
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem("blog-profile");
     return saved ? JSON.parse(saved) : { name: "송수하" };
@@ -54,10 +40,6 @@ export default function App() {
   const [editingPost, setEditingPost] = useState(null);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [playlist, setPlaylist] = useState(() => {
-    const saved = localStorage.getItem("blog-playlist");
-    return saved ? JSON.parse(saved) : [];
-  });
 
   /* ----------------------- LocalStorage Save ------------------------ */
   useEffect(
@@ -73,10 +55,6 @@ export default function App() {
     [userInfo]
   );
   useEffect(() => localStorage.setItem("blog-theme", theme.name), [theme]);
-  useEffect(
-    () => localStorage.setItem("blog-playlist", JSON.stringify(playlist)),
-    [playlist]
-  );
 
   /* ----------------------- Handlers ------------------------ */
   const handleCreatePost = (post) => {
@@ -113,19 +91,6 @@ export default function App() {
     setEditingPost(null);
   };
 
-  const handleAddSong = (song) => {
-    const newSong = {
-      ...song,
-      id: Date.now().toString(),
-      addedAt: new Date().toISOString(),
-    };
-    setPlaylist([...playlist, newSong]);
-  };
-
-  const handleDeleteSong = (id) => {
-    setPlaylist(playlist.filter((s) => s.id !== id));
-  };
-
   const handleCategoryChange = (category) => {
     setCurrentCategory(category);
     setIsCreatingPost(false);
@@ -156,14 +121,6 @@ export default function App() {
                 theme={theme}
                 borderColor={BORDER_COLOR}
                 profile={profile}
-              />
-            ) : currentCategory === "나의 플레이리스트" ? (
-              <PlaylistManager
-                songs={playlist}
-                onAdd={handleAddSong}
-                onDelete={handleDeleteSong}
-                theme={theme}
-                borderColor={BORDER_COLOR}
               />
             ) : (
               <>

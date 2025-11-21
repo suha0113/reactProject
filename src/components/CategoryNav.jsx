@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 const categoryIcons = {
   '일상': '📝',
   '맛집': '🍴',
-  '나의 플레이리스트': '🎵',
   '나의 정보': '👤',
   '기타': '📌',
 };
@@ -32,7 +31,7 @@ export function CategoryNav({ categories, currentCategory, onCategoryChange, onN
               />
               <span className="relative">{categoryIcons[category]} {category}</span>
             </button>
-            {currentCategory === category && category !== '나의 정보' && category !== '나의 플레이리스트' && (
+            {currentCategory === category && category !== '나의 정보' && (
               <button
                 onClick={onNewPost}
                 className="w-full mt-2 px-3 py-2 rounded-lg transition-all text-xs flex items-center justify-center gap-2 relative overflow-hidden group"
