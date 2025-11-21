@@ -1,9 +1,20 @@
-import { useCallback, useRef, useState } from "react";
-import { Map, MapMarker } from "react-kakao-maps-sdk";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
+import { Map, MapMarker, useKakaoLoader } from "react-kakao-maps-sdk";
 import { MapPin, Search, X } from "lucide-react";
 
-const KAKAO_APP_KEY = "ebb672f8668ef515c9e7a4cd8141af67";
+const KAKAO_APP_KEY = "3d845dd0682685018a6da8b9e70e6b4c";
 const DEFAULT_CENTER = { lat: 37.566826, lng: 126.9786567 };
+
+const TEXT = {
+  title: "장소 검색",
+  mapLoadingAlert: "카카오 지도를 불러오는 중입니다. 잠시만 기다려 주세요.",
+  noResultAlert: "검색 결과가 없습니다.",
+  placeholder: "맛집 이름 또는 지점을 입력하세요",
+  helper: "음식점 이름이나 지점을 입력하여 검색하세요.",
+  empty: "검색어를 입력하고 검색 버튼을 눌러주세요.",
+  select: "이 위치 선택하기",
+  loading: "지도를 불러오는 중...",
+};
 
 export function MapSearch({ onSelect, onClose, theme, borderColor }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,7 +25,11 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
   const [isMapReady, setIsMapReady] = useState(false);
 
   const mapRef = useRef(null);
-  const placesServiceRef = useRef(null);
+
+  const [loading, error] = useKakaoLoader({
+    appkey: KAKAO_APP_KEY,
+    libraries: ["services"],
+  });
 
   const toLatLng = useCallback(
     (place) => ({
@@ -24,82 +39,86 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
     []
   );
 
-  const ensurePlacesService = useCallback(() => {
-    if (placesServiceRef.current) return placesServiceRef.current;
-    if (!window.kakao?.maps?.services) return null;
-
-    placesServiceRef.current = new window.kakao.maps.services.Places();
-    return placesServiceRef.current;
-  }, []);
-
-  const handleMapCreate = useCallback((mapInstance) => {
-    mapRef.current = mapInstance;
-    setIsMapReady(true);
-
-    if (!placesServiceRef.current && window.kakao?.maps?.services) {
-      placesServiceRef.current = new window.kakao.maps.services.Places();
-    }
-  }, []);
+  const handleMapCreate = useCallback(
+    (mapInstance) => {
+      console.log("[MapSearch] Map created", {
+        hasLoaderError: Boolean(error),
+      });
+      mapRef.current = mapInstance;
+      setIsMapReady(true);
+    },
+    [error]
+  );
 
   const handleSearch = () => {
+    console.log("[MapSearch] handleSearch called with query: ", searchQuery);
     if (!searchQuery.trim()) return;
 
-    const service = ensurePlacesService();
-
-    if (!service) {
-      const mock = [
-        {
-          place_name: `${searchQuery} 본점`,
-          address_name: "서울특별시 강남구 테헤란로 123",
-          x: "127.0276",
-          y: "37.4979",
-        },
-        {
-          place_name: `${searchQuery} 지점`,
-          address_name: "서울특별시 서초구 서초동 456",
-          x: "126.9366",
-          y: "37.5559",
-        },
-      ];
-      setSearchResults(mock);
-      setSelectedPlace(null);
-      const nextCenter = toLatLng(mock[0]);
-      setCenter(nextCenter);
-      setMapLevel(3);
+    if (loading) {
+      console.warn("[MapSearch] still loading kakao SDK");
+      alert(TEXT.mapLoadingAlert);
       return;
     }
 
-    service.keywordSearch(searchQuery, (data, status) => {
-      if (status === window.kakao.maps.services.Status.OK) {
-        const sliced = data.slice(0, 5);
-        setSearchResults(sliced);
-        setSelectedPlace(null);
+    if (error) {
+      console.error("[MapSearch] kakao loader error", error);
+      alert("Kakao SDK load error. Console를 확인하세요.");
+      return;
+    }
 
-        if (sliced.length) {
-          const nextCenter = toLatLng(sliced[0]);
-          setCenter(nextCenter);
-          setMapLevel(3);
+    if (!isMapReady || !window.kakao?.maps?.services) {
+      console.warn("[MapSearch] Kakao map not ready", {
+        isMapReady,
+        hasKakao: Boolean(window.kakao),
+        hasServices: Boolean(window.kakao?.maps?.services),
+      });
+      alert(TEXT.mapLoadingAlert);
+      return;
+    }
 
-          if (mapRef.current && window.kakao?.maps) {
-            mapRef.current.setCenter(
-              new window.kakao.maps.LatLng(nextCenter.lat, nextCenter.lng)
-            );
-            mapRef.current.setLevel(3);
-          }
-        }
-      } else {
-        alert("검색 결과가 없습니다.");
+    console.log("[MapSearch] Starting keyword search");
+    const placesService = new window.kakao.maps.services.Places();
+
+    placesService.keywordSearch(searchQuery, (data, status) => {
+      console.log(
+        "[MapSearch] keywordSearch status:",
+        status,
+        "data length:",
+        data?.length
+      );
+      if (status !== window.kakao.maps.services.Status.OK) {
+        alert(TEXT.noResultAlert);
         setSearchResults([]);
+        return;
+      }
+
+      const sliced = data.slice(0, 5);
+      setSearchResults(sliced);
+      setSelectedPlace(null);
+
+      if (sliced.length) {
+        const nextCenter = toLatLng(sliced[0]);
+        setCenter(nextCenter);
+        setMapLevel(3);
+
+        if (mapRef.current && window.kakao?.maps) {
+          mapRef.current.setCenter(
+            new window.kakao.maps.LatLng(nextCenter.lat, nextCenter.lng)
+          );
+          mapRef.current.setLevel(3);
+        }
       }
     });
   };
 
   const handleSelectPlace = (place) => {
+    console.log("[MapSearch] place selected:", place);
     onSelect(`${place.place_name} (${place.address_name})`);
     onClose();
   };
 
   const handlePlaceClick = (place) => {
+    console.log("[MapSearch] place clicked:", place);
     const nextCenter = toLatLng(place);
     setSelectedPlace(place);
     setCenter(nextCenter);
@@ -113,20 +132,41 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
     }
   };
 
+  useEffect(() => {
+    console.log("[MapSearch] mounted with props", { borderColor, theme });
+    return () => console.log("[MapSearch] unmounted");
+  }, [borderColor, theme]);
+
+  useEffect(() => {
+    console.log("[MapSearch] map ready state changed:", isMapReady);
+  }, [isMapReady]);
+
+  useEffect(() => {
+    console.log("[MapSearch] center/level changed:", center, mapLevel);
+  }, [center, mapLevel]);
+
+  useEffect(() => {
+    console.log("[MapSearch] searchResults updated:", searchResults);
+  }, [searchResults]);
+
+  useEffect(() => {
+    console.log("[MapSearch] selected place changed:", selectedPlace);
+  }, [selectedPlace]);
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-5xl w-[300px] p-6"
+        className="bg-white rounded-lg shadow-xl min-w-5xl w-[300px] p-6"
         style={{ border: `3px solid ${borderColor}` }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg flex items-center gap-2">
             <MapPin className="w-5 h-5" />
-            음식점 검색
+            {TEXT.title}
           </h2>
           <button
             onClick={onClose}
@@ -142,8 +182,8 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="음식점 이름을 입력하세요"
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder={TEXT.placeholder}
               className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 text-sm"
               style={{ "--tw-ring-color": theme.color }}
             />
@@ -160,13 +200,11 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
               />
               <span className="relative z-10 flex items-center gap-2">
                 <Search className="w-4 h-4" />
-                검색
+                \uAC80\uC0C9
               </span>
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            💡 음식점 이름이나 지역을 입력하여 검색하세요
-          </p>
+          <p className="text-xs text-gray-500 mt-2">{TEXT.helper}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -174,9 +212,7 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
             {searchResults.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <MapPin className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">
-                  검색어를 입력하고 검색 버튼을 눌러주세요
-                </p>
+                <p className="text-sm">{TEXT.empty}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -221,7 +257,7 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
                         className="w-full px-4 py-2 text-white rounded-lg transition-all text-sm"
                         style={{ backgroundColor: borderColor }}
                       >
-                        이 위치 선택하기
+                        {TEXT.select}
                       </button>
                     )}
                   </div>
@@ -268,9 +304,11 @@ export function MapSearch({ onSelect, onClose, theme, borderColor }) {
                 );
               })}
             </Map>
-            {!isMapReady && (
+            {(!isMapReady || loading) && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                <p className="text-sm text-gray-500">지도를 불러오는 중...</p>
+                <p className="text-sm text-gray-500">
+                  {loading ? "SDK \uB85C\uB4DC \uC911..." : TEXT.loading}
+                </p>
               </div>
             )}
           </div>

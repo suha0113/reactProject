@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { BlogHeader } from "./components/BlogHeader";
 import { CategoryNav } from "./components/CategoryNav";
 import { PostList } from "./components/PostList";
@@ -7,32 +7,25 @@ import { ProfileEditor } from "./components/ProfileEditor";
 import { MyInfo } from "./components/MyInfo";
 import { PlaylistManager } from "./components/PlaylistManager";
 import { pastelThemes, BORDER_COLOR } from "./themeColors";
-import { useKakaoLoader } from "react-kakao-maps-sdk";
-import { Map } from "react-kakao-maps-sdk";
 
-const categories = ["일상", "맛집", "나의 플레이리스트", "나의 정보", "기타"];
+const categories = [
+  "\uc77c\uc0c1",
+  "\ub9db\uc9d1",
+  "\ub098\uc758 \ud50c\ub808\uc774\ub9ac\uc2a4\ud2b8",
+  "\ub098\uc758 \uc815\ubcf4",
+  "\uae30\ud0c0",
+];
 
 export default function App() {
-  const [currentCategory, setCurrentCategory] = useState("일상");
+  const [currentCategory, setCurrentCategory] = useState("\uc77c\uc0c1");
   const [posts, setPosts] = useState(() => {
     const saved = localStorage.getItem("blog-posts");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [loading, error] = useKakaoLoader({
-    appkey: "ebb672f8668ef515c9e7a4cd8141af67",
-    libraries: ["services"],
-  });
-
-  if (loading) {
-    console.log("로딩중");
-  }
-  if (error) {
-    console.log(String(error.message || error));
-  }
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem("blog-profile");
-    return saved ? JSON.parse(saved) : { name: "송수하" };
+    return saved ? JSON.parse(saved) : { name: "\uc0ac\uc6a9\uc790" };
   });
 
   const [userInfo, setUserInfo] = useState(() => {
@@ -40,9 +33,9 @@ export default function App() {
     return saved
       ? JSON.parse(saved)
       : {
-          name: "송수하",
-          hobbies: "영화보기, 노래듣기",
-          favoriteMovie: "트루먼쇼",
+          name: "\uc0ac\uc6a9\uc790",
+          hobbies: "\uc601\ud654\ubcf4\uae30, \ub178\ub798\ubd80\ub974\uae30",
+          favoriteMovie: "\ud2b8\ub8e8\uba3c\uc1fc",
         };
   });
 
@@ -147,9 +140,8 @@ export default function App() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex gap-6">
-          {/* 메인 콘텐츠 */}
           <div className="flex-1">
-            {currentCategory === "나의 정보" ? (
+            {currentCategory === "\ub098\uc758 \uc815\ubcf4" ? (
               <MyInfo
                 userInfo={userInfo}
                 onEdit={setUserInfo}
@@ -157,7 +149,7 @@ export default function App() {
                 borderColor={BORDER_COLOR}
                 profile={profile}
               />
-            ) : currentCategory === "나의 플레이리스트" ? (
+            ) : currentCategory === "\ub098\uc758 \ud50c\ub808\uc774\ub9ac\uc2a4\ud2b8" ? (
               <PlaylistManager
                 songs={playlist}
                 onAdd={handleAddSong}
@@ -189,7 +181,6 @@ export default function App() {
             )}
           </div>
 
-          {/* 오른쪽 카테고리 사이드바 */}
           <div className="w-64 flex-shrink-0">
             <CategoryNav
               categories={categories}
