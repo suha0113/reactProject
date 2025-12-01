@@ -9,19 +9,26 @@ export function BlogHeader({
   onEditProfile,
   borderColor,
 }) {
+  //테마 팝업이 열렸는지 닫혔는지 관리하는 state
   const [showThemes, setShowThemes] = useState(false);
+  //테마 버튼을 가리키는 DOM 요소
   const themeRef = useRef(null);
 
-  // ⭐ 테마 메뉴 위치 저장 (ref.current를 렌더에서 직접 읽지 않기 위해)
+  //팝업을 화면 어디에 위치시킬지 저장
+  //테마 메뉴 위치 저장 (ref.current를 렌더에서 직접 읽지 않기 위해)
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
 
-  // ------------------------------
-  // ① 테마 박스 위치 계산 (렌더 중 접근 X)
-  // ------------------------------
+  //테마 박스 위치 계산 (렌더 중 접근 X)
+  //useEffect는 렌더링 후에 실행돼서 화면이 깜빡일 수 있음
+  //반면 useLayoutEffect는 브라우저가 화면을 그리기 전에 실행되기 때문에
+  //정확한 위치에 자연스럽게 뜸
   useLayoutEffect(() => {
     if (showThemes && themeRef.current) {
+      //element의 크기, 위치 정보 반환
       const rect = themeRef.current.getBoundingClientRect();
 
+      //테마 버튼의 위치(좌표)를 가져옴
+      //그 기준으로 팝업 menu의 top, right 값을 계산, 팝업이 버튼 바로 아래에 뜸
       setMenuPos({
         top: rect.bottom + 8,
         right: window.innerWidth - rect.right,
@@ -29,9 +36,7 @@ export function BlogHeader({
     }
   }, [showThemes]);
 
-  // ------------------------------
-  // ② 바깥 클릭 → 테마 메뉴 닫기
-  // ------------------------------
+  //바깥 클릭 → 테마 메뉴 닫기
   useEffect(() => {
     const currentRef = themeRef.current;
 
@@ -63,7 +68,7 @@ export function BlogHeader({
           />
 
           <div className="flex items-center justify-between relative z-10">
-            {/* ---------------- 프로필 영역 ---------------- */}
+            {/* 프로필 영역 */}
             <div className="flex items-center gap-4">
               <div
                 className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center"
@@ -87,8 +92,9 @@ export function BlogHeader({
               </div>
             </div>
 
-            {/* ---------------- 버튼 영역 ---------------- */}
+            {/*버튼 영역 */}
             <div className="flex items-center gap-3 relative z-30">
+              {/* 프로필 수정 버튼 클릭 시 모달 열림*/}
               <button
                 onClick={onEditProfile}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors relative overflow-hidden group"
@@ -103,8 +109,9 @@ export function BlogHeader({
                 <Settings className="w-5 h-5 relative z-10" />
               </button>
 
-              {/* ---------------- 테마 변경 버튼 ---------------- */}
+              {/* 테마 변경 버튼 */}
               <div className="relative" ref={themeRef}>
+                {/* 테마 버튼 누르면 테마 선택창 토글 */}
                 <button
                   onClick={() => setShowThemes(!showThemes)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center gap-2 relative overflow-hidden group"
@@ -122,7 +129,7 @@ export function BlogHeader({
                   </span>
                 </button>
 
-                {/* ---------------- 테마 팝업 ---------------- */}
+                {/* 테마 팝업 */}
                 {showThemes && (
                   <>
                     <div
@@ -141,11 +148,16 @@ export function BlogHeader({
                       <p className="text-xs mb-3">테마 색상 선택</p>
 
                       <div className="grid grid-cols-3 gap-2">
+                        {/**테마 정보 배열, 테마 하나(t)마다 버튼 하나씩 렌더링, 즉 테마가 6개면 버튼도 6개 생김 */}
                         {themes.map((t) => (
+                          //테마 선택 버튼
                           <button
+                            //리액트에서 리스트 렌더링할 때 필수인 key속성, t.name을 key로 사용
                             key={t.name}
                             onClick={() => {
+                              //선택한 테마 t로 넘김
                               onThemeChange(t);
+                              //테마 선택 모달 닫는 역할
                               setShowThemes(false);
                             }}
                             className="h-12 rounded-lg transition-transform hover:scale-105 relative overflow-hidden group flex items-center justify-center"

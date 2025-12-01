@@ -8,6 +8,8 @@ import {
   ChevronUp,
   MapPin,
 } from "lucide-react";
+
+//글 삭제 시 확인 모달 띄우는 데 사용
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,17 +22,22 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 
+//한 페이지에 5개의 글만 보여주기 위한(페이징) 상수
 const POSTS_PER_PAGE = 5;
 
 export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
+  //현재 몇 페이지인지 저장
   const [currentPage, setCurrentPage] = useState(1);
+  //펼쳐진 게시글들의 id를 저장 set/ 어떤 글이 펼쳐져 있는지 기록
   const [expandedPosts, setExpandedPosts] = useState(new Set());
 
+  //페이징 계산 / 전체 글 중 현재 페이지가 보여주는 구간만 잘라서 보여주는 방식
   const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
   const endIndex = startIndex + POSTS_PER_PAGE;
   const currentPosts = posts.slice(startIndex, endIndex);
 
+  //날짜 포맷/ 0000년 0월 00일 00:00
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("ko-KR", {
@@ -42,6 +49,8 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
     });
   };
 
+  //글 펼치기, 접기 기능 토글
+  //Set을 사용해 한 글만이 아니라 여러 글을 동시에 펼칠 수 있다. 게시글 id 기준으로 open close 상태 관리
   const togglePost = (postId) => {
     const newExpandedPosts = new Set(expandedPosts);
     if (newExpandedPosts.has(postId)) {
@@ -52,6 +61,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
     setExpandedPosts(newExpandedPosts);
   };
 
+  //글이 없는 경우
   if (posts.length === 0) {
     return (
       <div>
@@ -81,6 +91,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
             >
               <div className="p-4">
                 <div className="flex justify-between items-start mb-3">
+                  {/*제목 클릭하면 접기/펼치기 */}
                   <button
                     onClick={() => togglePost(post.id)}
                     className="flex-1 text-left group"
@@ -95,6 +106,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
                         </p>
                       </div>
                       <div className="ml-2">
+                        {/*펼쳐져 있으면 ChevronUp / ChevronDown*/}
                         {isExpanded ? (
                           <ChevronUp className="w-4 h-4 text-gray-500" />
                         ) : (
@@ -104,6 +116,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
                     </div>
                   </button>
                   <div className="flex gap-2 ml-2">
+                    {/*App.jsx에서 받은 onEdit 실행 -> PostEditor 열림*/}
                     <button
                       onClick={() => onEdit(post)}
                       className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative overflow-hidden group"
@@ -117,6 +130,8 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
                       />
                       <Edit2 className="w-3.5 h-3.5 relative z-10" />
                     </button>
+                    {/*삭제 버튼 + alertDialog*/}
+                    {/*실수로 삭제 되는 걸 방지, 경고 모달 띄우기*/}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <button
@@ -154,6 +169,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
                   </div>
                 </div>
 
+                {/*글 내용 펼쳤을 때 / 전체 이미지, 내용 표시*/}
                 {isExpanded && (
                   <>
                     {post.image && (
@@ -170,7 +186,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
                     </p>
                   </>
                 )}
-
+                {/* 접었을 때 / 작은 썸네일, 글 내용 일부(최대 2줄)*/}
                 {!isExpanded && (
                   <>
                     {post.image && (
@@ -192,8 +208,10 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
           );
         })}
 
+        {/*페이징 */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 py-4">
+            {/*이전 버튼 */}
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
@@ -208,6 +226,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
               <ChevronLeft className="w-5 h-5 relative z-10" />
             </button>
 
+            {/*페이지 번호 버튼들*/}
             <div className="flex gap-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                 (page) => (
@@ -234,6 +253,7 @@ export function PostList({ posts, onEdit, onDelete, theme, borderColor }) {
               )}
             </div>
 
+            {/*다음 버튼*/}
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
